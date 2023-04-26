@@ -1,106 +1,129 @@
 // Important requires
 const createError = require("http-errors");
-const { createRecord, readRecord, updateRecord, deleteRecord } = require('../utils/CRUD');
-
+const { v4: uuidv4 } = require("uuid");
+const {
+    createRecord,
+    readRecord,
+    updateRecord,
+    deleteRecord,
+    getAllRecords,
+    getEventsByType,
+} = require("../utils/CRUD");
 
 /**
- * Create User function
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * @returns 
+ * Function to get all event types
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
  */
-const createUser = async (req, res,next) => {
+const getEventTypes = async (req, res, next) => {
+
     try {
+        const eventTypes = await getAllRecords("Events-Type");
 
-        /**
-         * Read Record
-         */
-        const userPath = `Users/${req.sub}`;
-        const testData = await readRecord(userPath);
-
-        if(testData){
-            throw new createError[409](
-                "Error, User id has already been defined"
-            );
-        }
-
-        /**
-         * Create Record
-         */
-        const recordData = { userId: req.sub,
-            name: req.name,};
-        await createRecord(userPath, recordData);
-
-        return res.status(200).send({
-            message: "true",
-        });
-        
+        res.status(200).send(eventTypes);
     } catch (error) {
         console.error(error);
         next(error);
     }
 };
 
-
 /**
- * Test Function
+ * Function to get Events by event type ID
  * @param {*} req
  * @param {*} res
- * @returns
+ * @param {*} next
  */
-const test = async (req, res,next) => {
+const getEventsByEventsTypeId = async (req, res, next) => {
+
     try {
-        if (0) {
-            throw new createError[422](
-                "Error no userId/userDetails not found!"
-            );
+        const eventTypeId = req.params.eventTypeId;
+
+        /**
+         * Check if type does not exists
+         */
+        const eventTypePath = `Events-Type/${eventTypeId}`;
+        const eventTypeRecord = await readRecord(eventTypePath);
+
+        if (!eventTypeRecord) {
+            throw new createError[404]("Event type not found");
         }
 
-        const response = {
-            sub:"1234",
-            name:"Test2"
+        const events = await getEventsByType(eventTypeId);
+
+        res.status(200).send(events);
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+};
+
+/**
+ * Function to book event
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+const bookEvent = async (req, res, next) => {
+
+    try {
+
+        const eventId = req.params.eventId;
+        const userId = req.params.userId;
+
+        /**
+         * Check if user does not exists
+         */
+        const userPath = `Users/${userId}`;
+        const userRecord = await readRecord(userPath);
+
+        if (!userRecord) {
+            throw new createError[404]("User not found");
         }
 
+        /**
+         * Check if event does not exists
+         */
+        const eventPath = `Events/${eventId}`;
+        const eventRecord = await readRecord(eventPath);
+
+        if (!eventRecord) {
+            throw new createError[404]("Event not found");
+        }
+
+        if(eventRecord.availableTickets<=0){
+            throw new createError[403]("No more available tickets in this event");
+        }
+
+        /**
+         * Update available tickets
+         */
+        const eventUpdateRecord = { 
+            availableTickets: eventRecord.availableTickets-1,
+        };
+        await updateRecord(eventPath, eventUpdateRecord);
+
+        // Generate a new UUID
+        const ticketId = uuidv4();
+
+        const ticketPath = `Tickets/${ticketId}`;
 
         /**
          * Create Record
          */
-        const recordPath = 'Users/'+ response.sub;
-        const recordData = { userId: response.sub,
-            name: response.name,};
-        await createRecord(recordPath, recordData);
+        const ticketData = {
+            ticketId: ticketId,
+            eventId: eventId,
+            userId : userId,
+            status: "pending"
+        };
+        await createRecord(ticketPath, ticketData);
 
-        /**
-         * Read Record
-         */
-        const recordPath2 = `Users/${response.sub}`;
-        const recordData2 = await readRecord(recordPath2);
-
-        console.log(recordData2)
-
-        const response2 = {
-            sub:"1234",
-            name:"Test5"
-        }
-
-        /**
-         * Update Record
-         */
-        const recordPath3 = 'Users/'+ response.sub;
-        const recordData3 = { userId: response2.sub,
-            name: response2.name,};
-        await updateRecord(recordPath3, recordData3);
-
-        /**
-         * Delete Record
-         */
-        const recordPath4 = `Users/${response2.sub}`;
-        await deleteRecord(recordPath4);
-
-        return res.status(200).send({
-            message: "true",
+        res.status(200).send({
+            sucess: "true",
+            ticketId: ticketId,
         });
+
     } catch (error) {
         console.error(error);
         next(error);
@@ -108,6 +131,7 @@ const test = async (req, res,next) => {
 };
 
 module.exports = {
-    test,
-    createUser,
+    getEventTypes,
+    getEventsByEventsTypeId,
+    bookEvent,
 };
