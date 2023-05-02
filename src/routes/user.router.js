@@ -12,6 +12,9 @@ router.route("/events/:eventTypeId").get(userControllers.getEventsByEventsTypeId
 // To book an event
 router.route("/events/book/:eventId/:userId").get(userControllers.bookEvent);
 
+// To get all event types
+router.route("/history/:userId").get(userControllers.getHistory);
+
 /**
  * Todo get tickets and ticket details by userid
  */

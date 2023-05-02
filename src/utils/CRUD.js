@@ -59,13 +59,49 @@ async function getEventsByType(type) {
                 );
                 const now = new Date();
                 if (eventDateTime >= now) {
-                events.push(eventData);
+                    events.push(eventData);
                 }
             }
         });
     }
 
     return events;
+}
+
+// Function to get all events by event type id and filter events by date and time
+async function getHistoryById(userId) {
+    const ticketsRef = ref(database, "Tickets");
+    const ticketsSnapshot = await get(ticketsRef);
+
+    let subObject = {}
+    const tickets = [];
+    if (ticketsSnapshot.exists()) {
+        const ticketPromises = [];
+        ticketsSnapshot.forEach((ticketChild) => {
+            const ticketData = ticketChild.val();
+            if (ticketData.userId == userId) {
+                const eventPromise = readRecord(`Events/${ticketData.eventId}`).then(async (eventRecord) => {
+                    if (eventRecord) {
+                        ticketData.eventDetails = eventRecord;
+                        ticketData.eventDetails.availableTickets = "";
+                        tickets.push(ticketData);
+                    }
+                });
+                ticketPromises.push(eventPromise);
+            }
+
+        });
+        subObject = {
+            tickets,
+        }
+        await readRecord(`Users/${userId}`).then((userRecord) => {
+            subObject.email = userRecord.email;
+            subObject.fullName = userRecord.fullName;
+        });
+        await Promise.all(ticketPromises);
+    }
+
+    return subObject;
 }
 
 module.exports = {
@@ -75,4 +111,5 @@ module.exports = {
     deleteRecord,
     getAllRecords,
     getEventsByType,
+    getHistoryById
 };

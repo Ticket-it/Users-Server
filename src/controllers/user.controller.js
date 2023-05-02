@@ -8,6 +8,7 @@ const {
     deleteRecord,
     getAllRecords,
     getEventsByType,
+    getHistoryById
 } = require("../utils/CRUD");
 
 /**
@@ -130,8 +131,44 @@ const bookEvent = async (req, res, next) => {
     }
 };
 
+
+/**
+ * Function to get history
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
+const getHistory = async (req, res, next) => {
+
+    try {
+
+        const userId = req.params.userId;
+
+        /**
+         * Check if user does not exists
+         */
+        const userPath = `Users/${userId}`;
+        const userRecord = await readRecord(userPath);
+
+        if (!userRecord) {
+            throw new createError[404]("User not found");
+        }
+
+        const history=await getHistoryById(userId);
+
+        res.status(200).send({
+            history
+        });
+
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+};
+
 module.exports = {
     getEventTypes,
     getEventsByEventsTypeId,
     bookEvent,
+    getHistory
 };
