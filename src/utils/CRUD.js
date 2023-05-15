@@ -83,7 +83,6 @@ async function getHistoryById(userId) {
                 const eventPromise = readRecord(`Events/${ticketData.eventId}`).then(async (eventRecord) => {
                     if (eventRecord) {
                         ticketData.eventDetails = eventRecord;
-                        ticketData.eventDetails.availableTickets = "";
                         tickets.push(ticketData);
                     }
                 });
