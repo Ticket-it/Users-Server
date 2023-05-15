@@ -39,6 +39,7 @@ const getEventsByEventsTypeId = async (req, res, next) => {
 
     try {
         const eventTypeId = req.params.eventTypeId;
+        console.log(eventTypeId);
 
         /**
          * Check if type does not exists
@@ -46,11 +47,13 @@ const getEventsByEventsTypeId = async (req, res, next) => {
         const eventTypePath = `Events-Type/${eventTypeId}`;
         const eventTypeRecord = await readRecord(eventTypePath);
 
+
         if (!eventTypeRecord) {
             throw new createError[404]("Event type not found");
         }
 
         const events = await getEventsByType(eventTypeId);
+        console.log(events);
 
         res.status(200).send(events);
     } catch (error) {
@@ -123,6 +126,7 @@ const bookEvent = async (req, res, next) => {
         res.status(200).send({
             sucess: "true",
             ticketId: ticketId,
+            status: "pending"
         });
 
     } catch (error) {
@@ -155,8 +159,10 @@ const getHistory = async (req, res, next) => {
         }
 
         const history=await getHistoryById(userId);
-
-        res.status(200).send({
+        console.log(history);
+        
+        
+        return res.status(200).send({
             history
         });
 

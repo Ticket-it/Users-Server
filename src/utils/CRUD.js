@@ -94,10 +94,10 @@ async function getHistoryById(userId) {
         subObject = {
             tickets,
         }
-        await readRecord(`Users/${userId}`).then((userRecord) => {
-            subObject.email = userRecord.email;
-            subObject.fullName = userRecord.fullName;
-        });
+        // await readRecord(`Users/${userId}`).then((userRecord) => {
+        //     subObject.email = userRecord.email;
+        //     subObject.fullName = userRecord.fullName;
+        // });
         await Promise.all(ticketPromises);
     }
 
