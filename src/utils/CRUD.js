@@ -17,6 +17,20 @@ async function readRecord(path) {
     }
 }
 
+async function ticketExists(userId, eventId) {
+    const snapshot = await get(ref(database, 'Tickets'));
+    if (snapshot.exists()) {
+        const tickets = snapshot.val();
+        const existingTicket = Object.values(tickets).find(
+            (ticket) => ticket.userId === userId && ticket.eventId === eventId
+        );
+        return !!existingTicket; // Returns true if a matching ticket exists, false otherwise
+    } else {
+        return false;
+    }
+}
+
+
 // Function to update a record
 async function updateRecord(path, data) {
     await update(ref(database, path), data);
@@ -93,10 +107,6 @@ async function getHistoryById(userId) {
         subObject = {
             tickets,
         }
-        // await readRecord(`Users/${userId}`).then((userRecord) => {
-        //     subObject.email = userRecord.email;
-        //     subObject.fullName = userRecord.fullName;
-        // });
         await Promise.all(ticketPromises);
     }
 
@@ -110,5 +120,6 @@ module.exports = {
     deleteRecord,
     getAllRecords,
     getEventsByType,
-    getHistoryById
+    getHistoryById,
+    ticketExists
 };

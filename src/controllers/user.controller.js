@@ -8,7 +8,8 @@ const {
     deleteRecord,
     getAllRecords,
     getEventsByType,
-    getHistoryById
+    getHistoryById,
+    ticketExists
 } = require("../utils/CRUD");
 
 /**
@@ -39,7 +40,6 @@ const getEventsByEventsTypeId = async (req, res, next) => {
 
     try {
         const eventTypeId = req.params.eventTypeId;
-        console.log(eventTypeId);
 
         /**
          * Check if type does not exists
@@ -49,11 +49,13 @@ const getEventsByEventsTypeId = async (req, res, next) => {
 
 
         if (!eventTypeRecord) {
-            throw new createError[404]("Event type not found");
+            return res.status(404).json({
+                status: 404,
+                message: "Event type not found"
+              });
         }
 
         const events = await getEventsByType(eventTypeId);
-        console.log(events);
 
         res.status(200).send(events);
     } catch (error) {
@@ -69,41 +71,60 @@ const getEventsByEventsTypeId = async (req, res, next) => {
  * @param {*} next
  */
 const bookEvent = async (req, res, next) => {
-
     try {
-
         const eventId = req.params.eventId;
         const userId = req.params.userId;
 
         /**
-         * Check if user does not exists
+         * Check if user does not exist
          */
         const userPath = `Users/${userId}`;
         const userRecord = await readRecord(userPath);
 
         if (!userRecord) {
-            throw new createError[404]("User not found");
+            return res.status(404).json({
+                status: 404,
+                message: "Error, User not found"
+            });
         }
 
         /**
-         * Check if event does not exists
+         * Check if event does not exist
          */
         const eventPath = `Events/${eventId}`;
         const eventRecord = await readRecord(eventPath);
 
         if (!eventRecord) {
-            throw new createError[404]("Event not found");
+            return res.status(404).json({
+                status: 404,
+                message: "Event not found"
+            });
         }
 
-        if(eventRecord.availableTickets<=0){
-            throw new createError[403]("No more available tickets in this event");
+        if (eventRecord.availableTickets <= 0) {
+            return res.status(403).json({
+                status: 403,
+                message: "No more available tickets for this event"
+            });
+        }
+
+        /**
+         * Check if user has already booked a ticket for this event
+         */
+        const existingTicket = await ticketExists(userId, eventId);
+
+        if (existingTicket) {
+            return res.status(403).json({
+                status: 403,
+                message: "User has already booked a ticket for this event"
+            });
         }
 
         /**
          * Update available tickets
          */
-        const eventUpdateRecord = { 
-            availableTickets: eventRecord.availableTickets-1,
+        const eventUpdateRecord = {
+            availableTickets: eventRecord.availableTickets - 1,
         };
         await updateRecord(eventPath, eventUpdateRecord);
 
@@ -118,13 +139,13 @@ const bookEvent = async (req, res, next) => {
         const ticketData = {
             ticketId: ticketId,
             eventId: eventId,
-            userId : userId,
+            userId: userId,
             status: "pending"
         };
         await createRecord(ticketPath, ticketData);
 
         res.status(200).send({
-            sucess: "true",
+            success: true,
             ticketId: ticketId,
             status: "pending"
         });
@@ -134,7 +155,6 @@ const bookEvent = async (req, res, next) => {
         next(error);
     }
 };
-
 
 /**
  * Function to get history
@@ -155,13 +175,14 @@ const getHistory = async (req, res, next) => {
         const userRecord = await readRecord(userPath);
 
         if (!userRecord) {
-            throw new createError[404]("User not found");
+            return res.status(404).json({
+                status: 404,
+                message: "Error, User not found"
+              });
         }
 
-        const history=await getHistoryById(userId);
-        console.log(history);
-        
-        
+        const history=await getHistoryById(userId);        
+    
         return res.status(200).send({
             history
         });
